@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- saved from url=(0061)https://www.mapbox.com/help/demos/turfjs-intro/demo-four.html -->
 <html style=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     
@@ -142,7 +142,7 @@
         // console.log(ttcCoords);
         
      generateVoronoi();
-      //   map.setPaintProperty('paris', 'raster-opacity', 0.8);
+     //map.setPaintProperty('paris', 'raster-opacity', 0.8);
  /*
     map.addLayer({
       id: 'libraries',
@@ -256,19 +256,15 @@
 
     function generateVoronoi() {
         voronoiFeatures = [];
-        //var ttcCoords = pos_data;
-        //console.log('ttcCoords', ttcCoords);
-       // console.log(ttcCoords);
+
         for (let i = 0; i < ttcCoords.length; i++) {
-        //for(pp in ttcCoords){
             if(isNaN(ttcCoords[i][0]) || isNaN(ttcCoords[i][1]))
                 continue;
-            let voronoiPoint = turf.point(ttcCoords[i]); //
+            let voronoiPoint = turf.point(ttcCoords[i]); 
      
             voronoiFeatures.push(voronoiPoint);
             
         }
-        //console.log('voronoiFeatures', voronoiFeatures);
         const ttcVoronoi = turf.featureCollection(voronoiFeatures);
         
         extent = turf.bbox(ttcVoronoi, 100);
@@ -277,42 +273,43 @@
             bbox: extent
         };
         
-        voronoiPolygons = turf.voronoi(ttcVoronoi, options);
-        
+        voronoiPolygons = turf.voronoi(ttcVoronoi, options);        
         
         var filtered = voronoiPolygons.features.filter(function (el) {
                                     return el != null;
                                     });
                                     
-                                    voronoiPolygons.features = filtered;
+        voronoiPolygons.features = filtered;
+
+        var coloring = voronoiPolygons.features.map(function (e) {
+            e.properties.color = 'rgba(' + Math.random() * 255 + ',' + Math.random() * 255 + ',' + Math.random() * 255 + ',0.2)';
+            return e;
+        });
+
+        console.log(voronoiPolygons.features[0].properties);
        
-        if (voronoiDraw == false) {
-            
-             //console.log('voronoi poly', voronoiPolygons);
-            
+        if (voronoiDraw == false) {                       
             voronoiDraw = true;
             
             map.addLayer({
-                         'id': 'voronoi',
-                         'type': 'fill',
-                         'source': {
-                         'type': 'geojson',
-                         'data': voronoiPolygons
-                         },
-                        'layout': {
-                        
-                         },
-                         'paint': {
-                         //'fill-color': 'rgba(0,0,0,0)',
-                         'fill-color': 'rgba('+Math.random()*255+','+Math.random()*255+','+Math.random()*255+',0.2)',
-                         'fill-opacity': 1,
-                        // 'line-width': 3,
-                         'fill-outline-color': '#899'
-                         }
-          
-                         }
-                         
-                         );
+                'id': 'voronoi',
+                'type': 'fill',
+                'source': {
+                    'type': 'geojson',
+                    'data': voronoiPolygons
+                },
+                'layout': {
+
+                },
+                'paint': {
+                    'fill-color': {
+                        type: 'identity',
+                        property: 'color'
+                    },//'rgba('+Math.random()*255+','+Math.random()*255+','+Math.random()*255+',0.2)',
+                    'fill-opacity': 1,
+                    'fill-outline-color': '#899'
+                }
+            });
              
                          //fit();
                          
