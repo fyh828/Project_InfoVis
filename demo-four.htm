@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!-- saved from url=(0061)https://www.mapbox.com/help/demos/turfjs-intro/demo-four.html -->
 <html style=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     
@@ -7,6 +7,7 @@
     <script src="./demo-four_files/mapbox-gl.js"></script>
     <link href="./demo-four_files/mapbox-gl.css" rel="stylesheet">
 <!--    <script src="./demo-four_files/turf.min.js"></script>-->
+
     <script src="https://npmcdn.com/@turf/turf/turf.min.js"></script>
     <script src="./libraries/PapaParse/papaparse.min.js"></script>
     <script src="./libraries/require.js"></script>
@@ -18,14 +19,33 @@
 </head>
 
 <body>
-
+    <style>
+        #map.menu {
+            position: absolute;
+            background: #fff;
+            padding: 10px;
+            font-family: 'Open Sans', sans-serif;
+        }
+    </style>
+   
+    
+    
     <div id="map" class="mapboxgl-map">
+        <div id='menu'>
+            <input type="checkbox" id="option1" name="option1" value="RERA" checked> RER A
+                <input type="checkbox" id="option2" name="option2" value="RERB" checked> RER B
+<!--                        <input type="submit" value="Submit" onclick="filterButton()">-->
+       </div>
         
         <div class="mapboxgl-canary" style="visibility: hidden;"></div><div class="mapboxgl-canvas-container mapboxgl-interactive mapboxgl-touch-drag-pan mapboxgl-touch-zoom-rotate">
     <canvas class="mapboxgl-canvas" tabindex="0" aria-label="Map" width="1088" height="1556" style="position: absolute; width: 544px; height: 778px;"></canvas>
+  
 
 
 </div>
+        
+        
+        
         <canvas class="voronoi-canvas" id="voronoi-canvas" width="1088" height="1556" style="position: absolute; width: 544px; height: 778px; z-index:0;"></canvas>
 <div class="mapboxgl-control-container"><div class="mapboxgl-ctrl-top-left"></div><div class="mapboxgl-ctrl-top-right"></div><div class="mapboxgl-ctrl-bottom-left"><div class="mapboxgl-ctrl" style="display: block;"><a class="mapboxgl-ctrl-logo" target="_blank" href="https://www.mapbox.com/" aria-label="Mapbox logo" rel="noopener"></a></div></div><div class="mapboxgl-ctrl-bottom-right"><div class="mapboxgl-ctrl mapboxgl-ctrl-attrib mapboxgl-compact"><div class="mapboxgl-ctrl-attrib-inner"><a href="https://www.mapbox.com/about/maps/" target="_blank">© Mapbox</a> <a href="http://www.openstreetmap.org/about/" target="_blank">© OpenStreetMap</a> <a class="mapbox-improve-map" href="https://www.mapbox.com/feedback/?owner=mapbox&amp;id=light-v9&amp;access_token=pk.eyJ1IjoiZXhhbXBsZXMiLCJhIjoiY2lqbmpqazdlMDBsdnRva284cWd3bm11byJ9.V6Hg2oYJwMAxeoR9GEzkAA" target="_blank">Improve this map</a></div></div></div></div></div>
 <script>
@@ -87,8 +107,20 @@
                    });
     }
 
-   // parseData("./data/test.csv", doStuff);
-    parseData("./data/stops.csv", doStuff);
+    // Import data here
+    
+    if(getOptions(1))
+        parseData("./data/stops_A.csv", doStuff);
+    
+
+    if(getOptions(2))
+        parseData("./data/stops_B.csv", doStuff);
+    
+    
+    document.getElementById("option1").checked = getOptions(1);
+    document.getElementById("option2").checked = getOptions(2);
+    
+    //parseData("./data/stops.csv", doStuff);
     
     // https://bl.ocks.org/mbostock/6675193
     // https://beta.observablehq.com/@mbostock/u-s-airports-voronoi
@@ -322,6 +354,90 @@
         map.setMaxBounds(extent, {padding: 20});
         // console.log(map.getZoom());
     }
+
+
+    // menu function
+    function getOptions(optionNumber){
+        var re = "\\?option"+optionNumber+"=";
+        var n = location.href.search(re);
+        
+        if(n == -1)
+            return true;
+        else{
+            if(location.href[n+re.length-1] == 0)
+                return false;
+            else return true;
+        }
+        
+    }
+
+
+    function filterButton() {
+        /*
+        var check1 = document.getElementById("option1");
+        var check2 = document.getElementById("option2");
+        
+        if(!getOptions(1))
+        if (checkBox.checked == true){
+        
+        }
+        console.log(getOptions(1));
+        ////
+        console.log(1);
+        var var1 = 1, var2 = 1;
+        var re = "\\?option1=";
+        var re2 = "\\?option2=";
+        var n = location.href.search(re);
+        var n2 = location.href.search(re2);
+        if(n == -1)
+            location.href = location.href+'?option1='+var1;
+        else
+            location.href = location.href.substr(0, n+re.length-1) + (var1+1)+ location.href.substr(n+re.length);
+            
+        if(n2 == -1)
+            location.href = location.href+'?option2='+var2;
+        else
+            location.href = location.href.substr(0, n2+re2.length-1) + (var1+1)+ location.href.substr(n2+re2.length);
+         */
+        
+    }
+
+
+    var checkbox1 = document.querySelector("input[name=option1]");
+    
+    checkbox1.addEventListener( 'change', function() {
+                               var re = "\\?option1=";
+                               var n = location.href.search(re);
+                               //window.location.reload(false);
+                              if(this.checked) {
+                               location.href = location.href.substr(0, n+re.length-1) + 1 + location.href.substr(n+re.length);
+                   
+                              } else {
+                               if(n == -1)
+                                location.href = location.href+'?option1=0';
+                               else
+                               location.href = location.href.substr(0, n+re.length-1) + 0 + location.href.substr(n+re.length);
+                              }
+                               
+     });
+     
+     var checkbox2 = document.querySelector("input[name=option2]");
+     
+     checkbox2.addEventListener( 'change', function() {
+                                var re = "\\?option2=";
+                                var n = location.href.search(re);
+                                //window.location.reload(false);
+                                if(this.checked) {
+                                location.href = location.href.substr(0, n+re.length-1) + 1 + location.href.substr(n+re.length);
+                                
+                                } else {
+                                if(n == -1)
+                                location.href = location.href+'?option2=0';
+                                else
+                                location.href = location.href.substr(0, n+re.length-1) + 0 + location.href.substr(n+re.length);
+                                }
+                                
+                                });
 
   </script>
 
