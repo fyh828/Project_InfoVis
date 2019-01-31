@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- saved from url=(0061)https://www.mapbox.com/help/demos/turfjs-intro/demo-four.html -->
 <html style=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     
@@ -26,6 +26,20 @@
             padding: 10px;
             font-family: 'Open Sans', sans-serif;
         }
+
+        #cluster_legend {
+            display: none;
+            position: relative;
+            float: right;
+            padding-right: 5%;
+        }
+
+        #area_legend {
+            display: inline-block;
+            position: relative;
+            float: right;
+            padding-right: 5%;
+        }
     </style>
    
     
@@ -33,10 +47,25 @@
     <div id="map" class="mapboxgl-map">
         <div id='menu'>
             <input type="checkbox" id="option1" name="option1" value="RERA" checked> RER A
-                <input type="checkbox" id="option2" name="option2" value="RERB" checked> RER B
-              <input type="checkbox" id="option3" name="option3" value="DATALAYER" checked> Data Layer
-<!--                        <input type="submit" value="Submit" onclick="filterButton()">-->
-       </div>
+            <input type="checkbox" id="option2" name="option2" value="RERB" checked> RER B
+            <input type="checkbox" id="option3" name="option3" value="DATALAYER" checked> Data Layer
+            <!--                        <input type="submit" value="Submit" onclick="filterButton()">-->
+
+
+            <div id="cluster_legend" class="legend">
+                <span style="padding-left: 1em; padding-right:2em;"><b>Cluster Legend</b></span>
+                <span>cluster 0</span>
+                <div style="background-image: linear-gradient(to right, red, blue); width:20em; height:1em; display:inline-block"></div>
+                <span>cluster 19</span>
+            </div>
+
+            <div id="area_legend" class="legend">
+                <span style="padding-left: 1em; padding-right:2em;"><b>Area Legend</b></span>
+                <span>2e6 m²</span>
+                <div style="background-image: linear-gradient(to right, red, blue); width:20em; height:1em; display:inline-block"></div>
+                <span>1e8 m²</span>
+            </div>
+        </div>
         
         <div class="mapboxgl-canary" style="visibility: hidden;"></div><div class="mapboxgl-canvas-container mapboxgl-interactive mapboxgl-touch-drag-pan mapboxgl-touch-zoom-rotate">
     <canvas class="mapboxgl-canvas" tabindex="0" aria-label="Map" width="1088" height="1556" style="position: absolute; width: 544px; height: 778px;"></canvas>
@@ -252,43 +281,72 @@
     function generateVoronoi() {
         voronoiFeatures = [];
 
+        zoomThreshold = 10;
+
         for (let i = 0; i < ttcCoords.length; i++) {
-            if(isNaN(ttcCoords[i][0]) || isNaN(ttcCoords[i][1]))
+            if (isNaN(ttcCoords[i][0]) || isNaN(ttcCoords[i][1]))
                 continue;
-            let voronoiPoint = turf.point(ttcCoords[i]); 
-     
+            let voronoiPoint = turf.point(ttcCoords[i]);
+
             voronoiFeatures.push(voronoiPoint);
-            
+
         }
-        const ttcVoronoi = turf.featureCollection(voronoiFeatures);
-        
+        voronoiFeatures = turf.featureCollection(voronoiFeatures);
+        voronoiFeaturesCluster = turf.clustersKmeans(voronoiFeatures, { numberOfClusters: 20 });
+        const ttcVoronoi = voronoiFeatures;
+        const ttcVoronoiCluster = voronoiFeaturesCluster;
+
         extent = turf.bbox(ttcVoronoi, 100);
-        
+
         const options = {
             bbox: extent
         };
-        
-        voronoiPolygons = turf.voronoi(ttcVoronoi, options);        
-        
+
+        voronoiPolygons = turf.voronoi(ttcVoronoi, options);
+        voronoiPolygonsCluster = turf.voronoi(ttcVoronoiCluster, options);
+
         var filtered = voronoiPolygons.features.filter(function (el) {
-                                    return el != null;
-                                    });
-                                    
+            return el != null;
+        });
+
+        var filtered = voronoiPolygonsCluster.features.filter(function (el) {
+            return el != null;
+        });
+
         voronoiPolygons.features = filtered;
+        voronoiPolygonsCluster.features = filtered;
+
+        for (let i = 0; i < voronoiPolygonsCluster.features.length; i++) {
+            for (let j = 0; j < voronoiFeaturesCluster.features.length; j++) {
+                if (turf.booleanPointInPolygon(voronoiFeaturesCluster.features[j].geometry, voronoiPolygonsCluster.features[i].geometry)) {
+                    voronoiPolygonsCluster.features[i].properties.cluster = voronoiFeaturesCluster.features[j].properties.cluster;
+                    voronoiPolygonsCluster.features[i].properties.centroid = voronoiFeaturesCluster.features[j].properties.centroid;
+                    voronoiPolygonsCluster.features[i].properties.center = voronoiFeaturesCluster.features[j].geometry.coordinates;
+                    break;
+                }
+            }
+        }
 
         var coloring = voronoiPolygons.features.map(function (e) {
+            e.properties.area = turf.area(e);
+            e.properties.color = 'rgba(' + Math.random() * 255 + ',' + Math.random() * 255 + ',' + Math.random() * 255 + ',0.2)';
+            return e;
+        });
+        var coloring = voronoiPolygonsCluster.features.map(function (e) {
+            e.properties.area = turf.area(e);
             e.properties.color = 'rgba(' + Math.random() * 255 + ',' + Math.random() * 255 + ',' + Math.random() * 255 + ',0.2)';
             return e;
         });
 
         console.log(voronoiPolygons.features[0].properties);
-       
-        if (voronoiDraw == false) {                       
+
+        if (voronoiDraw == false) {
             voronoiDraw = true;
-            
+
             map.addLayer({
                 'id': 'voronoi',
                 'type': 'fill',
+                "minzoom": zoomThreshold,
                 'source': {
                     'type': 'geojson',
                     'data': voronoiPolygons
@@ -298,18 +356,96 @@
                 },
                 'paint': {
                     'fill-color': {
-                        type: 'identity',
-                        property: 'color'
-                    },//'rgba('+Math.random()*255+','+Math.random()*255+','+Math.random()*255+',0.2)',
-                    'fill-opacity': 1,
+                        property: 'area',
+                        stops: [[2000000, "#ff0000"], [100000000, "#3366ff"]]
+                    },
+                    'fill-opacity': 0.7,
                     'fill-outline-color': '#899'
                 }
             });
-             
-                         //fit();
-                         
+
+            map.addLayer({
+                'id': 'voronoiCluster',
+                'type': 'fill',
+                'maxzoom': zoomThreshold,
+                'source': {
+                    'type': 'geojson',
+                    'data': voronoiPolygonsCluster
+                },
+                'layout': {
+
+                },
+                'paint': {
+                    'fill-color': {
+                        property: 'cluster',
+                        stops: [[0, "#ff0000"], [20, "#3366ff"]]
+                    },
+                    'fill-opacity': 0.7,
+                    'fill-outline-color': '#899'
+                }
+            });
+
+            map.addLayer({
+                id: 'voronoiCenter',
+                type: 'symbol',
+                source: {
+                    'type': 'geojson',
+                    'data': voronoiFeatures
+                },
+                layout: {
+                    "icon-image": "bus-15",
+                    'icon-allow-overlap': true
+                },
+                paint: {
+
+                }
+            });
+
+
+            // When a click event occurs on a feature in the states layer, open a popup at the
+            // location of the click, with description HTML from its properties.
+            map.on('click', 'voronoi', function (e) {
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(parseInt(e.features[0].properties.area).toExponential() + " m² " + '\n' + " cluster :" + e.features[0].properties.cluster)
+                    .addTo(map);
+            });
+
+            map.on('click', 'voronoiCluster', function (e) {
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(parseInt(e.features[0].properties.area).toExponential() + " m² " + '\n' + " cluster :" + e.features[0].properties.cluster)
+                    .addTo(map);
+            });
+
+            // Change the cursor to a pointer when the mouse is over the states layer.
+            map.on('mouseenter', 'voronoi', function () {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'voronoi', function () {
+                map.getCanvas().style.cursor = '';
+            });
+
+            var clusterLegend = document.getElementById("cluster_legend");
+            var areaLegend = document.getElementById("area_legend");
+
+            map.on('zoom', function () {
+                if (map.getZoom() < zoomThreshold) {
+                    clusterLegend.style.display = 'inline-block';
+                    areaLegend.style.display = 'none';
+                } else {
+                    clusterLegend.style.display = 'none';
+                    areaLegend.style.display = 'inline-block';
+                }
+            });
+
+            //fit();
+
         } else {
             map.getSource('voronoi').setData(voronoiPolygons);
+            map.getSource('voronoiCenter').setData(voronoiPolygons);
         }
         
     }
