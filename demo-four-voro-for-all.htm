@@ -31,11 +31,7 @@
     
     
     <div id="map" class="mapboxgl-map">
-        <div id='menu'>
-            <input type="checkbox" id="option1" name="option1" value="RERA" checked> RER A
-                <input type="checkbox" id="option2" name="option2" value="RERB" checked> RER B
-<!--                        <input type="submit" value="Submit" onclick="filterButton()">-->
-       </div>
+       
         
         <div class="mapboxgl-canary" style="visibility: hidden;"></div><div class="mapboxgl-canvas-container mapboxgl-interactive mapboxgl-touch-drag-pan mapboxgl-touch-zoom-rotate">
     <canvas class="mapboxgl-canvas" tabindex="0" aria-label="Map" width="1088" height="1556" style="position: absolute; width: 544px; height: 778px;"></canvas>
@@ -108,19 +104,9 @@
     }
 
     // Import data here
-    
-    if(getOptions(1))
-        parseData("./data/stops_A.csv", doStuff);
-    
 
-    if(getOptions(2))
-        parseData("./data/stops_B.csv", doStuff);
     
-    
-    document.getElementById("option1").checked = getOptions(1);
-    document.getElementById("option2").checked = getOptions(2);
-    
-    //parseData("./data/stops.csv", doStuff);
+    parseData("./data/stops.csv", doStuff);
     
     // https://bl.ocks.org/mbostock/6675193
     // https://beta.observablehq.com/@mbostock/u-s-airports-voronoi
@@ -191,35 +177,6 @@
     });
 */
          /*
-         function draw2() {
-         console.log(document.getElementById("voronoi-canvas").getContext("2d"));
-         var context = document.getElementById("voronoi-canvas").getContext("2d");
-         
-         context.fillStyle = "#EEEEFF";
-         context.fillRect(0, 0, 400, 300);
-         var n = 0;
-         var dx = 150;
-         var dy = 150;
-         var s = 100;
-         context.beginPath();
-         context.globalCompositeOperation = 'and';
-         context.fillStyle = 'rgb(100,255,100)';
-         var x = Math.sin(0);
-         var y = Math.cos(0);
-         var dig = Math.PI / 15 * 11;
-         context.moveTo(dx, dy);
-         for (var i = 0; i < 30; i++) {
-         var x = Math.sin(i * dig);
-         var y = Math.cos(i * dig);
-         context.bezierCurveTo(dx + x * s, dy + y * s - 100, dx + x * s + 100, dy + y * s, dx + x * s, dy + y * s);
-         }
-         context.closePath();
-         context.fill();
-         context.stroke();
-         
-         }
-         
-         draw2();
   
 
     map.addSource('nearest-hospital', {
@@ -232,7 +189,7 @@
       });
           */
   });
-/*
+
   var popup = new mapboxgl.Popup();
 
   map.on('mousemove', function (e) {
@@ -252,7 +209,7 @@
       map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
 
   });
-
+/*
   map.on('click', function(e){
     var libraryFeatures = map.queryRenderedFeatures(e.point, { layers: ['pos_data'] });
       if (!libraryFeatures.length) {
@@ -356,88 +313,9 @@
     }
 
 
-    // menu function
-    function getOptions(optionNumber){
-        var re = "\\?option"+optionNumber+"=";
-        var n = location.href.search(re);
-        
-        if(n == -1)
-            return true;
-        else{
-            if(location.href[n+re.length-1] == 0)
-                return false;
-            else return true;
-        }
-        
-    }
 
 
-    function filterButton() {
-        /*
-        var check1 = document.getElementById("option1");
-        var check2 = document.getElementById("option2");
-        
-        if(!getOptions(1))
-        if (checkBox.checked == true){
-        
-        }
-        console.log(getOptions(1));
-        ////
-        console.log(1);
-        var var1 = 1, var2 = 1;
-        var re = "\\?option1=";
-        var re2 = "\\?option2=";
-        var n = location.href.search(re);
-        var n2 = location.href.search(re2);
-        if(n == -1)
-            location.href = location.href+'?option1='+var1;
-        else
-            location.href = location.href.substr(0, n+re.length-1) + (var1+1)+ location.href.substr(n+re.length);
-            
-        if(n2 == -1)
-            location.href = location.href+'?option2='+var2;
-        else
-            location.href = location.href.substr(0, n2+re2.length-1) + (var1+1)+ location.href.substr(n2+re2.length);
-         */
-        
-    }
 
-
-    var checkbox1 = document.querySelector("input[name=option1]");
-    
-    checkbox1.addEventListener( 'change', function() {
-                               var re = "\\?option1=";
-                               var n = location.href.search(re);
-                               //window.location.reload(false);
-                              if(this.checked) {
-                               location.href = location.href.substr(0, n+re.length-1) + 1 + location.href.substr(n+re.length);
-                   
-                              } else {
-                               if(n == -1)
-                                location.href = location.href+'?option1=0';
-                               else
-                               location.href = location.href.substr(0, n+re.length-1) + 0 + location.href.substr(n+re.length);
-                              }
-                               
-     });
-     
-     var checkbox2 = document.querySelector("input[name=option2]");
-     
-     checkbox2.addEventListener( 'change', function() {
-                                var re = "\\?option2=";
-                                var n = location.href.search(re);
-                                //window.location.reload(false);
-                                if(this.checked) {
-                                location.href = location.href.substr(0, n+re.length-1) + 1 + location.href.substr(n+re.length);
-                                
-                                } else {
-                                if(n == -1)
-                                location.href = location.href+'?option2=0';
-                                else
-                                location.href = location.href.substr(0, n+re.length-1) + 0 + location.href.substr(n+re.length);
-                                }
-                                
-                                });
 
   </script>
 

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<!-- saved from url=(0061)https://www.mapbox.com/help/demos/turfjs-intro/demo-four.html -->
+<html style=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title></title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src="./demo-four_files/mapbox-gl.js"></script>
+    <link href="./demo-four_files/mapbox-gl.css" rel="stylesheet">
+<!--    <script src="./demo-four_files/turf.min.js"></script>-->
+
+    <script src="https://npmcdn.com/@turf/turf/turf.min.js"></script>
+    <script src="./libraries/PapaParse/papaparse.min.js"></script>
+    <script src="./libraries/require.js"></script>
+    <script src="./libraries/jquery-3.3.1.min.js"></script>
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+
+<body>
+    <style>
+        #map.menu {
+            position: absolute;
+            background: #fff;
+            padding: 10px;
+            font-family: 'Open Sans', sans-serif;
+        }
+    </style>
+   
+    
+    
+    <div id="map" class="mapboxgl-map">
+        <div id='menu'>
+            <input type="checkbox" id="option1" name="option1" value="RERA" checked> RER A
+                <input type="checkbox" id="option2" name="option2" value="RERB" checked> RER B
+<!--                        <input type="submit" value="Submit" onclick="filterButton()">-->
+       </div>
+        
+        <div class="mapboxgl-canary" style="visibility: hidden;"></div><div class="mapboxgl-canvas-container mapboxgl-interactive mapboxgl-touch-drag-pan mapboxgl-touch-zoom-rotate">
+    <canvas class="mapboxgl-canvas" tabindex="0" aria-label="Map" width="1088" height="1556" style="position: absolute; width: 544px; height: 778px;"></canvas>
+  
+
+
+</div>
+        
+        
+        
+        <canvas class="voronoi-canvas" id="voronoi-canvas" width="1088" height="1556" style="position: absolute; width: 544px; height: 778px; z-index:0;"></canvas>
+<div class="mapboxgl-control-container"><div class="mapboxgl-ctrl-top-left"></div><div class="mapboxgl-ctrl-top-right"></div><div class="mapboxgl-ctrl-bottom-left"><div class="mapboxgl-ctrl" style="display: block;"><a class="mapboxgl-ctrl-logo" target="_blank" href="https://www.mapbox.com/" aria-label="Mapbox logo" rel="noopener"></a></div></div><div class="mapboxgl-ctrl-bottom-right"><div class="mapboxgl-ctrl mapboxgl-ctrl-attrib mapboxgl-compact"><div class="mapboxgl-ctrl-attrib-inner"><a href="https://www.mapbox.com/about/maps/" target="_blank">© Mapbox</a> <a href="http://www.openstreetmap.org/about/" target="_blank">© OpenStreetMap</a> <a class="mapbox-improve-map" href="https://www.mapbox.com/feedback/?owner=mapbox&amp;id=light-v9&amp;access_token=pk.eyJ1IjoiZXhhbXBsZXMiLCJhIjoiY2lqbmpqazdlMDBsdnRva284cWd3bm11byJ9.V6Hg2oYJwMAxeoR9GEzkAA" target="_blank">Improve this map</a></div></div></div></div></div>
+<script>
+    var ttcCoords = [];
+    var voronoiFeatures = [];
+    var voronoiDraw = false;
+    mapboxgl.accessToken = 'pk.eyJ1IjoibGVvbG9jIiwiYSI6ImNqcXBzYW1hYzAweGQzeG82ZHA2cDJ4cGoifQ.TViFkTfiLiOBnDMhFP097Q';
+    var map = new mapboxgl.Map({
+        container: 'map', // container id
+        style: 'mapbox://styles/mapbox/light-v9', //stylesheet location
+        center: [2.3473612552142624,48.85895618133369], // starting position
+        zoom: 12 // starting zoom
+    });
+    
+    //var file = new File([""], "./data/tests.csv");
+    //var stop_table;
+    //console.log( file );
+
+    var pos_data = {
+        "type": "FeatureCollection",
+        "features": []
+    };
+
+    var pos_tmp = {};
+
+    function doStuff(data) {
+        for(var i=1;i<data.length;i++){
+            pos_tmp = {};
+            pos_tmp = {
+                "type": "Feature",
+                
+                "properties": { "Name": data[i][2],
+                    "Address": data[i][3] },
+                
+                "geometry": { "type": "Point",
+                    "coordinates": [ data[i][5], data[i][4] ]
+                }
+            };
+            //console.log(pos_data.features);
+            pos_data.features.push(pos_tmp);
+            ttcCoords.push([ data[i][5], data[i][4] ]);
+        
+            
+        }
+        
+        
+        //var t = JSON.stringify(data);
+        //console.log(t);
+    }
+    //console.log(pos_data.features);
+    
+    function parseData(url, callBack) {
+        Papa.parse(url, {
+                   download: true,
+                   dynamicTyping: true,
+                   complete: function(results) {
+                   callBack(results.data);
+                   }
+                   });
+    }
+
+    // Import data here
+    
+    if(getOptions(1))
+        parseData("./data/stops_A.csv", doStuff);
+    
+
+    if(getOptions(2))
+        parseData("./data/stops_B.csv", doStuff);
+    
+    
+    document.getElementById("option1").checked = getOptions(1);
+    document.getElementById("option2").checked = getOptions(2);
+    
+    //parseData("./data/stops.csv", doStuff);
+    
+    // https://bl.ocks.org/mbostock/6675193
+    // https://beta.observablehq.com/@mbostock/u-s-airports-voronoi
+                 
+/*
+    var hospitals = {
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "Name": "VA Medical Center -- Leestown Division", "Address": "2250 Leestown Rd" }, "geometry": { "type": "Point", "coordinates": [ -84.539487, 38.072916 ] } },
+      { "type": "Feature", "properties": { "Name": "St. Joseph East", "Address": "150 N Eagle Creek Dr" }, "geometry": { "type": "Point", "coordinates": [ -84.440434, 37.998757 ] } },
+      { "type": "Feature", "properties": { "Name": "Central Baptist Hospital", "Address": "1740 Nicholasville Rd" }, "geometry": { "type": "Point", "coordinates": [ -84.512283, 38.018918 ] } },
+      { "type": "Feature", "properties": { "Name": "VA Medical Center -- Cooper Dr Division", "Address": "1101 Veterans Dr" }, "geometry": { "type": "Point", "coordinates": [ -84.506483, 38.02972 ] } },
+      { "type": "Feature", "properties": { "Name": "Shriners Hospital for Children", "Address": "1900 Richmond Rd" }, "geometry": { "type": "Point", "coordinates": [ -84.472941, 38.022564 ] } },
+      { "type": "Feature", "properties": { "Name": "Eastern State Hospital", "Address": "627 W Fourth St" }, "geometry": { "type": "Point", "coordinates": [ -84.498816, 38.060791 ] } },
+      { "type": "Feature", "properties": { "Name": "Cardinal Hill Rehabilitation Hospital", "Address": "2050 Versailles Rd" }, "geometry": { "type": "Point", "coordinates": [ -84.54212, 38.046568 ] } },
+      { "type": "Feature", "properties": { "Name": "St. Joseph Hospital", "ADDRESS": "1 St Joseph Dr" }, "geometry": { "type": "Point", "coordinates": [ -84.523636, 38.032475 ] } },
+      { "type": "Feature", "properties": { "Name": "UK Healthcare Good Samaritan Hospital", "Address": "310 S Limestone" }, "geometry": { "type": "Point", "coordinates": [ -84.501222, 38.042123 ] } },
+      { "type": "Feature", "properties": { "Name": "UK Medical Center", "Address": "800 Rose St" }, "geometry": { "type": "Point", "coordinates": [ -84.508205, 38.031254 ] }
+      }
+    ]
+  };
+  var libraries = {
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "Name": "Village Branch", "Address": "2185 Versailles Rd" }, "geometry": { "type": "Point", "coordinates": [ -84.548369, 38.047876 ] } },
+      { "type": "Feature", "properties": { "Name": "Northside Branch", "ADDRESS": "1733 Russell Cave Rd" }, "geometry": { "type": "Point", "coordinates": [ -84.47135, 38.079734 ] } },
+      { "type": "Feature", "properties": { "Name": "Central Library", "ADDRESS": "140 E Main St" }, "geometry": { "type": "Point", "coordinates": [ -84.496894, 38.045459 ] } },
+      { "type": "Feature", "properties": { "Name": "Beaumont Branch", "Address": "3080 Fieldstone Way" }, "geometry": { "type": "Point", "coordinates": [ -84.557948, 38.012502 ] } },
+      { "type": "Feature", "properties": { "Name": "Tates Creek Branch", "Address": "3628 Walden Dr" }, "geometry": { "type": "Point", "coordinates": [ -84.498679, 37.979598 ] } },
+      { "type": "Feature", "properties": { "Name": "Eagle Creek Branch", "Address": "101 N Eagle Creek Dr" }, "geometry": { "type": "Point", "coordinates": [ -84.442219, 37.999437 ] } }
+    ]
+  };
+
+*/
+
+  map.on('load', function(){
+         
+    map.addLayer({
+      id: 'pos_data',
+      type: 'symbol',
+      source: {
+        type: 'geojson',
+        data: pos_data
+      },
+      layout: { 
+        'icon-image': 'bus-11',
+        'icon-allow-overlap': true
+      },
+      paint: { }
+    });
+        // console.log(ttcCoords);
+        
+     generateVoronoi();
+     //map.setPaintProperty('paris', 'raster-opacity', 0.8);
+ /*
+    map.addLayer({
+      id: 'libraries',
+      type: 'symbol',
+      source: {
+        type: 'geojson',
+        data: libraries
+      },
+      layout: {
+        'icon-image': 'library-15',
+        'icon-allow-overlap': true
+      },
+      paint: { }
+    });
+*/
+         /*
+  
+
+    map.addSource('nearest-hospital', {
+        type: 'geojson',
+        data: {
+            'type': 'FeatureCollection',
+            'features': [ 
+              ]
+          }
+      });
+          */
+  });
+
+  var popup = new mapboxgl.Popup();
+
+  map.on('mousemove', function (e) {
+
+      var features = map.queryRenderedFeatures(e.point, { layers: ['pos_data'] });
+      if (!features.length) {
+          popup.remove();
+          return;
+      }
+
+      var feature = features[0];
+
+      popup.setLngLat(feature.geometry.coordinates)
+          .setHTML(feature.properties.Name)
+          .addTo(map);
+
+      map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
+
+  });
+/*
+  map.on('click', function(e){
+    var libraryFeatures = map.queryRenderedFeatures(e.point, { layers: ['pos_data'] });
+      if (!libraryFeatures.length) {
+          return;
+      }
+
+      var libraryFeature = libraryFeatures[0];
+
+      var nearestHospital = turf.nearest(libraryFeature, hospitals);
+
+      if (nearestHospital != null) {
+
+        map.getSource('nearest-hospital').setData({
+            'type': 'FeatureCollection',
+            'features': [
+                nearestHospital
+              ]
+          }
+        );
+
+        map.addLayer({
+          id: 'nearest-hospital',
+          type: 'circle',
+          source: 'nearest-hospital', 
+          paint: {
+            'circle-radius': 12,
+            'circle-color': '#486DE0'
+          }
+        }, 'hospitals');
+      }
+  });
+ */
+
+    function generateVoronoi() {
+        voronoiFeatures = [];
+
+        for (let i = 0; i < ttcCoords.length; i++) {
+            if(isNaN(ttcCoords[i][0]) || isNaN(ttcCoords[i][1]))
+                continue;
+            let voronoiPoint = turf.point(ttcCoords[i]); 
+     
+            voronoiFeatures.push(voronoiPoint);
+            
+        }
+        const ttcVoronoi = turf.featureCollection(voronoiFeatures);
+        
+        extent = turf.bbox(ttcVoronoi, 100);
+        
+        const options = {
+            bbox: extent
+        };
+        
+        voronoiPolygons = turf.voronoi(ttcVoronoi, options);        
+        
+        var filtered = voronoiPolygons.features.filter(function (el) {
+                                    return el != null;
+                                    });
+                                    
+        voronoiPolygons.features = filtered;
+
+        var coloring = voronoiPolygons.features.map(function (e) {
+            e.properties.color = 'rgba(' + Math.random() * 255 + ',' + Math.random() * 255 + ',' + Math.random() * 255 + ',0.2)';
+            return e;
+        });
+
+        console.log(voronoiPolygons.features[0].properties);
+       
+        if (voronoiDraw == false) {                       
+            voronoiDraw = true;
+            
+            map.addLayer({
+                'id': 'voronoi',
+                'type': 'fill',
+                'source': {
+                    'type': 'geojson',
+                    'data': voronoiPolygons
+                },
+                'layout': {
+
+                },
+                'paint': {
+                    'fill-color': {
+                        type: 'identity',
+                        property: 'color'
+                    },//'rgba('+Math.random()*255+','+Math.random()*255+','+Math.random()*255+',0.2)',
+                    'fill-opacity': 1,
+                    'fill-outline-color': '#899'
+                }
+            });
+             
+                         //fit();
+                         
+        } else {
+            map.getSource('voronoi').setData(voronoiPolygons);
+        }
+        
+    }
+    function fit() {
+        map.setMaxBounds(extent, {padding: 20});
+        // console.log(map.getZoom());
+    }
+
+
+    // menu function
+    function getOptions(optionNumber){
+        var re = "\\?option"+optionNumber+"=";
+        var n = location.href.search(re);
+        
+        if(n == -1)
+            return true;
+        else{
+            if(location.href[n+re.length-1] == 0)
+                return false;
+            else return true;
+        }
+        
+    }
+
+
+    function filterButton() {
+        /*
+        var check1 = document.getElementById("option1");
+        var check2 = document.getElementById("option2");
+        
+        if(!getOptions(1))
+        if (checkBox.checked == true){
+        
+        }
+        console.log(getOptions(1));
+        ////
+        console.log(1);
+        var var1 = 1, var2 = 1;
+        var re = "\\?option1=";
+        var re2 = "\\?option2=";
+        var n = location.href.search(re);
+        var n2 = location.href.search(re2);
+        if(n == -1)
+            location.href = location.href+'?option1='+var1;
+        else
+            location.href = location.href.substr(0, n+re.length-1) + (var1+1)+ location.href.substr(n+re.length);
+            
+        if(n2 == -1)
+            location.href = location.href+'?option2='+var2;
+        else
+            location.href = location.href.substr(0, n2+re2.length-1) + (var1+1)+ location.href.substr(n2+re2.length);
+         */
+        
+    }
+
+
+    var checkbox1 = document.querySelector("input[name=option1]");
+    
+    checkbox1.addEventListener( 'change', function() {
+                               var re = "\\?option1=";
+                               var n = location.href.search(re);
+                               //window.location.reload(false);
+                              if(this.checked) {
+                               location.href = location.href.substr(0, n+re.length-1) + 1 + location.href.substr(n+re.length);
+                   
+                              } else {
+                               if(n == -1)
+                                location.href = location.href+'?option1=0';
+                               else
+                               location.href = location.href.substr(0, n+re.length-1) + 0 + location.href.substr(n+re.length);
+                              }
+                               
+     });
+     
+     var checkbox2 = document.querySelector("input[name=option2]");
+     
+     checkbox2.addEventListener( 'change', function() {
+                                var re = "\\?option2=";
+                                var n = location.href.search(re);
+                                //window.location.reload(false);
+                                if(this.checked) {
+                                location.href = location.href.substr(0, n+re.length-1) + 1 + location.href.substr(n+re.length);
+                                
+                                } else {
+                                if(n == -1)
+                                location.href = location.href+'?option2=0';
+                                else
+                                location.href = location.href.substr(0, n+re.length-1) + 0 + location.href.substr(n+re.length);
+                                }
+                                
+                                });
+
+  </script>
+
+
+</body></html>
